@@ -1,0 +1,58 @@
+import 'package:flutter/material.dart';
+import 'package:barracadatia/Dispositivos.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async';
+
+class TelaPraca extends StatefulWidget {
+  @override
+  _TelaPracaState createState() => _TelaPracaState();
+}
+
+class _TelaPracaState extends State<TelaPraca> {
+
+
+  Future<List<Dispositivos>> RecuperarDados() async{
+    http.Response response = await http.get('http://192.168.0.16');
+    //int inicio = response.body.indexOf("<div id=\"json\">");
+    //int fim = response.body.indexOf("</div>");
+    //String Jason = response.body.substring(inicio+15,fim);
+    Map dados = json.decode(response.body);
+    print(response.body);
+    List<Dispositivos> lista = List();
+    Dispositivos esp = Dispositivos(dados['Mesa'],dados['Produto'],dados['Quantidade'],dados['Status']);
+    lista.add(esp);
+    return lista;
+  }
+
+
+  @override
+
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: FutureBuilder<List<Dispositivos>>(
+        future: RecuperarDados(),
+        builder: (context,snapshot){
+          switch (snapshot.connectionState) {
+            case ConnectionState.active:
+            case ConnectionState.none:
+            case ConnectionState.waiting:
+              return CircularProgressIndicator();
+              break;
+            case ConnectionState.done:
+              return ListView.builder(
+                itemCount: snapshot.data.length,
+                itemBuilder: (BuildContext context, indice){
+                  return ListTile(
+                    title: Text('Mesa : '+snapshot.data[indice].Mesa),
+                    subtitle: Text('Estado : '+snapshot.data[indice].Status),
+                  );
+                },
+              );
+          }
+        },
+      )
+    );
+  }
+}
+

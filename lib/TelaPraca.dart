@@ -12,8 +12,8 @@ class TelaPraca extends StatefulWidget {
 class _TelaPracaState extends State<TelaPraca> {
 
 
-  Future<List<Dispositivos>> RecuperarDados() async{
-    http.Response response = await http.get('http://192.168.0.16');
+  Future<List<Dispositivos>> RecuperarDados(url) async{
+    http.Response response = await http.get(url);
     Map dados = json.decode(response.body);
     print(response.body);
     List<Dispositivos> lista = List();
@@ -23,16 +23,42 @@ class _TelaPracaState extends State<TelaPraca> {
       ListaESP = lista;
     });
   }
+  
+  PostConfirmacao(url) async {
 
+    var corpo = json.encode(
+        {
+          "resposta":"OK"
+        }
+    );
+
+    http.Response response = await http.post(
+      url + "/posts",
+      headers: {
+        "Content-type": "application/json; charset=UTF-8"
+      },
+      body: corpo
+    );
+    Navigator.of(context).pop();
+  }
+
+  Widget Icone(indice){
+    if(ListaESP[indice].Status == "true"){
+      return Icon(Icons.check_box);
+    }else{
+      return Icon(Icons.check_box_outline_blank);
+    }
+  }
+
+  String url ='http://192.168.0.13';
   var clock;
   List<Dispositivos> ListaESP = [Dispositivos('','','','')];
   
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body:Container(
-        padding: EdgeInsets.all(50),
+        padding: EdgeInsets.all(30),
         child: Column(
           children: <Widget>[
             Row(
@@ -42,7 +68,7 @@ class _TelaPracaState extends State<TelaPraca> {
                   child: Text('START'),
                   onPressed: (){
                     clock = Timer.periodic(Duration(milliseconds: 200), (timer) async{
-                      List<Dispositivos> ListaESP = await RecuperarDados();
+                      List<Dispositivos> ListaESP = await RecuperarDados(url);
                     });
                   },
                 ),
@@ -51,7 +77,7 @@ class _TelaPracaState extends State<TelaPraca> {
                   onPressed: (){
                     clock.cancel();
                   },
-                )
+                ),
               ],
             ),
             Expanded(
@@ -59,8 +85,9 @@ class _TelaPracaState extends State<TelaPraca> {
                 itemCount: 1,
                 itemBuilder: (BuildContext context, indice){
                   return ListTile(
+                    leading: Icone(indice),
                     title: Text('Mesa: '+ListaESP[indice].Mesa),
-                    subtitle: Text('Estado: '),
+                    subtitle: Text('Estado: '+ListaESP[indice].Status),
                     onTap: (){
                       return showDialog(
                         context: context,
@@ -71,6 +98,14 @@ class _TelaPracaState extends State<TelaPraca> {
                               'PRODUTO: '+ListaESP[indice].Produto+'\n'+
                               'QUANTIDADE: '+ListaESP[indice].Quantidade
                             ),
+                            actions: <Widget>[
+                              FlatButton(
+                                child: Text('OK'),
+                                onPressed: (){
+                                  PostConfirmacao(url);
+                                },
+                              )
+                            ],
                           );
                         }
                       );
